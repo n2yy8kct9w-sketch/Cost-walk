@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cost Walk Studio</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cost Walk">
+<meta name="theme-color" content="#2B3A42">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<style>
+:root{
+  --ink:#17211F; --paper:#EDEFF2; --panel:#FFF; --mile:#2B3A42; --leg:#7A4FA3;
+  --esc:#B3402A; --cnt:#B07A1E; --red:#2F7D4E; --rec:#20647E; --oth:#5A6670;
+  --mut:#5A6670; --line:#E1E4E8; --bord:#C4CAD1;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:15px; padding:env(safe-area-inset-top) env(safe-area-inset-right) 48px env(safe-area-inset-left);
+}
+.wrap{max-width:1080px;margin:0 auto;padding:14px 12px}
+h1{font-size:24px;font-weight:800;letter-spacing:.2px;margin:0 6px 0 0}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}
+.spacer{margin-right:auto}
+input,select{
+  font:inherit;font-size:15px;padding:8px 9px;border:1.5px solid var(--bord);
+  border-radius:5px;background:#FFF;color:var(--ink);min-width:0;-webkit-appearance:none;appearance:none;
+}
+input:focus,select:focus{outline:2px solid var(--mile);outline-offset:1px}
+button{
+  font:inherit;font-size:13.5px;font-weight:600;padding:8px 12px;border-radius:5px;
+  border:1.5px solid var(--ink);background:#FFF;color:var(--ink);cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+button.solid{background:var(--ink);color:#FFF}
+button.danger{border-color:var(--esc);color:var(--esc)}
+button.legT{border-color:var(--leg);color:var(--leg)}
+button.legOff{border-color:#8A939B;color:#8A939B}
+button:active{transform:translateY(1px)}
+.panel{background:var(--panel);border:2px solid var(--ink);border-radius:7px;padding:13px;margin-bottom:12px}
+.panel.legacy{border-color:var(--leg)}
+.grid{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.fld{display:flex;flex-direction:column;gap:4px}
+.fld span{font-size:11.5px;color:var(--mut)}
+.grow{flex:1 1 200px}
+.hint{font-size:12px;color:var(--mut);margin-top:8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.chip{border:1.5px solid var(--ink);border-radius:5px;padding:8px 12px;background:var(--panel);min-width:112px}
+.chip .l{font-size:11.5px;color:var(--mut);margin-bottom:2px}
+.chip .v{font-size:18px;font-weight:800}
+.chartbox{background:var(--panel);border:2px solid var(--ink);border-radius:7px;padding:12px 6px 2px;margin-bottom:8px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12.5px;margin-bottom:14px}
+.legend .k{display:inline-flex;align-items:center;gap:6px}
+.sw{width:12px;height:12px;border-radius:2px;display:inline-block}
+.dash{width:18px;border-top:2.5px dashed var(--leg);display:inline-block}
+.tblbox{background:var(--panel);border:2px solid var(--ink);border-radius:7px;margin-bottom:16px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:13.5px}
+th{padding:9px 12px;text-align:left;font-size:14px;background:#F5F6F8;border-bottom:2px solid var(--ink)}
+th.r,td.r{text-align:right}
+td{padding:8px 12px;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:none}
+.phase{background:var(--panel);border:2px solid var(--ink);border-radius:7px;margin-bottom:12px;overflow:hidden}
+.phead{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:2px solid var(--ink);background:#F5F6F8}
+.phead b{font-size:16.5px}
+.pnet{font-size:13px;font-weight:600}
+.item{display:flex;flex-wrap:wrap;gap:7px;padding:8px 10px;border-bottom:1px solid var(--line);align-items:center}
+.item:last-child{border-bottom:none}
+.item input.lbl{flex:1 1 160px}
+.item select{width:148px}
+.item input.amt{width:100px;text-align:right;font-weight:600}
+.empty{padding:12px;font-size:13.5px;color:var(--mut)}
+.pos{color:var(--esc)} .neg{color:var(--red)} .legc{color:var(--leg)}
+.note{font-size:12.5px;color:var(--mut);margin-top:8px}
+.saved{font-size:12.5px;color:var(--red);font-weight:600}
+.saved.ok{color:#2F7D4E}
+#fileImp{display:none}
+@media (max-width:520px){ h1{font-size:21px} .chip .v{font-size:16.5px} }
+</style>
+</head>
+<body>
+<div class="wrap"><div id="app"></div></div>
+<input type="file" id="fileImp" accept="application/json">
+<script>
+"use strict";
+/* ============ Cost Walk Studio — offline PWA ============ */
+const KEY = "costwalk-studio-v1";
+const PHASES = ["BC \u2192 Gen 1", "Gen 1 \u2192 Gen 2", "Gen 2 \u2192 SOP"];
+const MILESTONES = ["Business case", "Gen 1", "Gen 2", "SOP"];
+const CATS = {
+  escalation: { label: "Escalation", color: "#B3402A" },
+  content:    { label: "Content / spec", color: "#B07A1E" },
+  reduction:  { label: "Reduction (VAVE)", color: "#2F7D4E" },
+  recovery:   { label: "Cost recovery", color: "#20647E" },
+  other:      { label: "Other", color: "#5A6670" }
+};
+const MILE = "#2B3A42", LEG = "#7A4FA3", INK = "#17211F";
+
+let idc = 0;
+const uid = () => "i" + Date.now().toString(36) + (idc++).toString(36);
+const fmt = n => new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(Math.round(n));
+const fmtD = n => (n >= 0 ? "+" : "\u2212") + fmt(Math.abs(n));
+const esc = s => String(s == null ? "" : s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const num = v => { const n = Number(v); return isFinite(n) ? n : 0; };
+
+function seedWalk(){
+  const it = (phase,label,category,amount)=>({id:uid(),phase,label,category,amount});
+  return {
+    id: uid(),
+    name: "50 HP Platform \u2014 Cost Walk",
+    unit: "\u20B9 / tractor",
+    bcCost: 585000,
+    legacy: { name: "Legacy: current 47 HP model", show: true, costs: [596000, 601500, 604800, 607200] },
+    items: [
+      it(0,"Steel & pig iron escalation","escalation",9500),
+      it(0,"TREM Stage V content","content",14200),
+      it(0,"Tyre price negotiation","reduction",-3800),
+      it(0,"Commodity recovery from suppliers","recovery",-2600),
+      it(1,"Copper & aluminium escalation","escalation",2900),
+      it(1,"Hydraulics spec upgrade","content",5600),
+      it(1,"HVAC condenser resourcing","reduction",-4200),
+      it(1,"Sheet-metal gauge VAVE","reduction",-3100),
+      it(1,"Inbound freight recovery","recovery",-1200),
+      it(2,"Final commodity escalation","escalation",2100),
+      it(2,"Fastener consolidation","reduction",-900),
+      it(2,"Paint process optimisation","reduction",-1400),
+      it(2,"Tooling amortisation recovery","recovery",-1800)
+    ]
+  };
+}
+function migrate(w){
+  if (w.legacy && Array.isArray(w.legacy.costs)) return w;
+  const c = num(w.refCost);
+  w.legacy = { name: w.refName || "Legacy model", show: w.showRef !== false, costs: [c,c,c,c] };
+  return w;
+}
+
+/* ---------- state & persistence (localStorage, autosave) ---------- */
+let state = load();
+let saveMsg = "";
+function load(){
+  try {
+    const r = localStorage.getItem(KEY);
+    if (r) {
+      const s = JSON.parse(r);
+      if (s.walks && Object.keys(s.walks).length) {
+        Object.values(s.walks).forEach(migrate);
+        if (!s.walks[s.activeId]) s.activeId = Object.keys(s.walks)[0];
+        return s;
+      }
+    }
+  } catch(e){}
+  const w = seedWalk();
+  return { walks: { [w.id]: w }, activeId: w.id };
+}
+function persist(){
+  try {
+    localStorage.setItem(KEY, JSON.stringify(state));
+    saveMsg = "Saved \u2713 " + new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"});
+  } catch(e) {
+    saveMsg = "Save failed \u2014 storage unavailable";
+  }
+}
+function mutate(fn){ fn(); persist(); render(); }
+const walk = () => state.walks[state.activeId];
+
+/* ------------------------- chart ------------------------- */
+function buildBars(w){
+  const bars = [{ t:"m", label: MILESTONES[0], value: num(w.bcCost), mi:0 }];
+  let run = num(w.bcCost);
+  PHASES.forEach((_,p)=>{
+    w.items.filter(i=>i.phase===p).forEach(i=>{
+      const start = run; run += num(i.amount);
+      bars.push({ t:"d", label:i.label, amount:num(i.amount), start, end:run, cat:i.category });
+    });
+    bars.push({ t:"m", label: MILESTONES[p+1], value: run, mi:p+1 });
+  });
+  return bars;
+}
+function chartSVG(w){
+  const bars = buildBars(w);
+  const showLeg = w.legacy.show;
+  const legC = w.legacy.costs.map(num);
+  const BW=44, GAP=14, PADL=66, PADR=30, PADT=44, PADB=96, H=400;
+  const W = PADL + bars.length*(BW+GAP) + PADR;
+  const vals = bars.flatMap(b => b.t==="m" ? [b.value] : [b.start,b.end]);
+  if (showLeg) vals.push(...legC);
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  const span = Math.max(hi-lo,1); lo -= span*0.13; hi += span*0.13;
+  const y = v => PADT + ((hi-v)/(hi-lo))*(H-PADT-PADB);
+  let s = `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" style="display:block">`;
+  for (let k=0;k<=4;k++){
+    const t = lo + (hi-lo)*k/4;
+    s += `<line x1="${PADL}" x2="${W-PADR}" y1="${y(t)}" y2="${y(t)}" stroke="#D7DBE0"/>`;
+    s += `<text x="${PADL-8}" y="${y(t)+4}" text-anchor="end" font-size="10.5" fill="#5A6670">${fmt(t)}</text>`;
+  }
+  const milX = [];
+  bars.forEach((b,i)=>{
+    const x = PADL + i*(BW+GAP);
+    if (b.t==="m"){
+      milX[b.mi] = x + BW/2;
+      const top = y(b.value);
+      s += `<rect x="${x}" y="${top}" width="${BW}" height="${Math.max(H-PADB-top,2)}" fill="${MILE}" rx="2"/>`;
+      s += `<text x="${x+BW/2}" y="${top-7}" text-anchor="middle" font-size="11" font-weight="700" fill="${INK}">${fmt(b.value)}</text>`;
+      s += `<text transform="translate(${x+BW/2+4},${H-PADB+12}) rotate(-42)" text-anchor="end" font-size="11" font-weight="700" fill="${INK}">${esc(b.label)}</text>`;
+      if (i < bars.length-1) s += `<line x1="${x+BW}" x2="${x+BW+GAP}" y1="${top}" y2="${top}" stroke="#8A939B" stroke-width="1.2" stroke-dasharray="3 3"/>`;
+    } else {
+      const y1 = y(Math.max(b.start,b.end));
+      const h = Math.max(Math.abs(y(b.start)-y(b.end)),2);
+      const c = (CATS[b.cat]||CATS.other).color;
+      const lb = b.label.length>20 ? b.label.slice(0,19)+"\u2026" : b.label;
+      s += `<rect x="${x}" y="${y1}" width="${BW}" height="${h}" fill="${c}" rx="2"/>`;
+      s += `<text x="${x+BW/2}" y="${y1-6}" text-anchor="middle" font-size="10.5" font-weight="600" fill="${c}">${fmtD(b.amount)}</text>`;
+      s += `<text transform="translate(${x+BW/2+4},${H-PADB+12}) rotate(-42)" text-anchor="end" font-size="10" fill="#3D4A47">${esc(lb)}</text>`;
+      s += `<line x1="${x+BW}" x2="${x+BW+GAP}" y1="${y(b.end)}" y2="${y(b.end)}" stroke="#8A939B" stroke-width="1.2" stroke-dasharray="3 3"/>`;
+    }
+  });
+  if (showLeg){
+    const mil = bars.filter(b=>b.t==="m");
+    const pts = legC.map((c,i)=>({x:milX[i], y:y(c), v:c}));
+    s += `<polyline points="${pts.map(p=>p.x+","+p.y).join(" ")}" fill="none" stroke="${LEG}" stroke-width="2.5" stroke-dasharray="8 5"/>`;
+    pts.forEach((p,i)=>{
+      const gap = mil[i].value - p.v;
+      const below = p.y < y(mil[i].value);
+      s += `<rect x="${p.x-4.5}" y="${p.y-4.5}" width="9" height="9" fill="${LEG}" transform="rotate(45 ${p.x} ${p.y})"/>`;
+      s += `<text x="${p.x}" y="${below ? p.y-9 : p.y+17}" text-anchor="middle" font-size="10.5" font-weight="700" fill="${LEG}">${fmt(p.v)}</text>`;
+      s += `<text x="${p.x}" y="${below ? p.y-21 : p.y+29}" text-anchor="middle" font-size="9.5" font-weight="600" fill="${gap>0?"#B3402A":"#2F7D4E"}">\u0394 ${fmtD(gap)}</text>`;
+    });
+  }
+  s += `<line x1="${PADL}" x2="${W-PADR}" y1="${H-PADB}" y2="${H-PADB}" stroke="${INK}" stroke-width="1.5"/></svg>`;
+  return s;
+}
+
+/* ------------------------- render ------------------------- */
+function render(){
+  const w = walk();
+  const bars = buildBars(w);
+  const newMil = bars.filter(b=>b.t==="m").map(b=>b.value);
+  const sop = newMil[3];
+  const legC = w.legacy.costs.map(num);
+  const sum = f => w.items.filter(f).reduce((s,i)=>s+num(i.amount),0);
+  const escT = sum(i=>i.category==="escalation"||i.category==="content");
+  const redT = sum(i=>i.category==="reduction");
+  const recT = sum(i=>i.category==="recovery");
+  const newMove = sop - num(w.bcCost);
+  const legMove = legC[3]-legC[0];
+  const pct = (d,b)=> b ? `${d>=0?"+":"\u2212"}${Math.abs(d/b*100).toFixed(1)}%` : "\u2014";
+  const cls = v => v>0 ? "pos" : "neg";
+
+  let h = `
+  <div class="bar">
+    <h1>Cost Walk Studio</h1><span class="spacer"></span>
+    <select id="walkSel">${Object.values(state.walks).map(x=>`<option value="${x.id}"${x.id===state.activeId?" selected":""}>${esc(x.name)}</option>`).join("")}</select>
+    <button data-act="new">New</button>
+    <button data-act="dup">Duplicate</button>
+    <button data-act="del" class="danger">Delete</button>
+    <button data-act="export">Export</button>
+    <button data-act="import">Import</button>
+    <span class="saved ok">${esc(saveMsg || "Autosaves on device")}</span>
+  </div>
+
+  <div class="panel"><div class="grid">
+    <label class="fld grow"><span>Walk name</span><input data-w="name" value="${esc(w.name)}"></label>
+    <label class="fld"><span>Business case cost</span><input data-w="bcCost" type="number" inputmode="decimal" style="width:130px" value="${esc(w.bcCost)}"></label>
+    <label class="fld"><span>Unit</span><input data-w="unit" style="width:110px" value="${esc(w.unit)}"></label>
+  </div></div>
+
+  <div class="panel legacy"><div class="grid">
+    <label class="fld grow"><span>Legacy / reference model</span><input data-leg="name" value="${esc(w.legacy.name)}"></label>
+    ${MILESTONES.map((m,i)=>`<label class="fld"><span>Legacy cost at ${m}</span><input data-legcost="${i}" type="number" inputmode="decimal" style="width:118px" value="${esc(w.legacy.costs[i])}"></label>`).join("")}
+    <div class="fld"><span>Show on chart</span><button data-act="toggleLeg" class="${w.legacy.show?"legT":"legOff"}">${w.legacy.show?"On":"Off"}</button></div>
+  </div>
+  <div class="hint">Enter the legacy model's cost at the same points in time as each new-model milestone \u2014 its own escalations and reductions over this period show as a moving trajectory.</div></div>
+
+  <div class="chips">
+    <div class="chip"><div class="l">Business case (${esc(w.unit)})</div><div class="v">${fmt(w.bcCost)}</div></div>
+    <div class="chip"><div class="l">Cost at SOP</div><div class="v">${fmt(sop)}</div></div>
+    <div class="chip"><div class="l">New model movement</div><div class="v ${cls(newMove)}">${fmtD(newMove)} (${pct(newMove,num(w.bcCost))})</div></div>
+    <div class="chip"><div class="l">Legacy movement (same period)</div><div class="v legc">${fmtD(legMove)} (${pct(legMove,legC[0])})</div></div>
+    <div class="chip"><div class="l">Gap vs legacy at SOP</div><div class="v ${cls(sop-legC[3])}">${fmtD(sop-legC[3])}</div></div>
+    <div class="chip"><div class="l">Escalation + content</div><div class="v pos">${fmtD(escT)}</div></div>
+    <div class="chip"><div class="l">Reductions</div><div class="v neg">${fmtD(redT)}</div></div>
+    <div class="chip"><div class="l">Recoveries</div><div class="v" style="color:#20647E">${fmtD(recT)}</div></div>
+  </div>
+
+  <div class="chartbox">${chartSVG(w)}</div>
+  <div class="legend">
+    <span class="k"><span class="sw" style="background:${MILE}"></span>New model milestone</span>
+    ${Object.values(CATS).map(c=>`<span class="k"><span class="sw" style="background:${c.color}"></span>${c.label}</span>`).join("")}
+    <span class="k"><span class="dash"></span>Legacy trajectory (\u0394 = new \u2212 legacy)</span>
+  </div>
+
+  <div class="tblbox"><table>
+    <tr><th>Milestone comparison (${esc(w.unit)})</th>${MILESTONES.map(m=>`<th class="r">${m}</th>`).join("")}<th class="r">Movement</th></tr>
+    <tr><td><b>New model</b></td>${newMil.map(v=>`<td class="r">${fmt(v)}</td>`).join("")}<td class="r ${cls(newMove)}"><b>${fmtD(newMove)}</b></td></tr>
+    <tr><td class="legc"><b>${esc(w.legacy.name)}</b></td>${legC.map(v=>`<td class="r legc">${fmt(v)}</td>`).join("")}<td class="r legc"><b>${fmtD(legMove)}</b></td></tr>
+    <tr><td><b>Gap (new \u2212 legacy)</b></td>${newMil.map((v,i)=>`<td class="r ${cls(v-legC[i])}"><b>${fmtD(v-legC[i])}</b></td>`).join("")}<td class="r"><b>${fmtD(newMove-legMove)}</b></td></tr>
+  </table></div>`;
+
+  PHASES.forEach((pName,p)=>{
+    const items = w.items.filter(i=>i.phase===p);
+    const pTotal = items.reduce((s,i)=>s+num(i.amount),0);
+    h += `<div class="phase">
+      <div class="phead"><b>${pName}</b><span class="pnet ${cls(pTotal)}">phase net ${fmtD(pTotal)}</span><span class="spacer"></span><button data-act="addItem:${p}">+ Add item</button></div>`;
+    if (!items.length) h += `<div class="empty">No items yet \u2014 add escalations, reductions or recoveries for this phase.</div>`;
+    items.forEach(i=>{
+      const c = (CATS[i.category]||CATS.other).color;
+      h += `<div class="item">
+        <input class="lbl" data-item="${i.id}" data-f="label" value="${esc(i.label)}">
+        <select data-item="${i.id}" data-f="category" style="border-color:${c};border-width:2px">
+          ${Object.entries(CATS).map(([k,cc])=>`<option value="${k}"${k===i.category?" selected":""}>${cc.label}</option>`).join("")}
+        </select>
+        <input class="amt ${cls(num(i.amount))}" data-item="${i.id}" data-f="amount" type="number" inputmode="decimal" value="${esc(i.amount)}">
+        <button data-act="delItem:${i.id}" class="danger">\u2715</button>
+      </div>`;
+    });
+    h += `</div>`;
+  });
+
+  h += `<div class="note">Enter increases (escalation, added content) as positive and decreases (reductions, recoveries) as negative, in ${esc(w.unit)}. Everything autosaves on this device; use Export for a JSON backup you can Import on another device.</div>`;
+  document.getElementById("app").innerHTML = h;
+}
+
+/* ------------------------- events ------------------------- */
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.id === "walkSel") return mutate(()=>{ state.activeId = t.value; });
+  const w = walk();
+  if (t.dataset.w) return mutate(()=>{ w[t.dataset.w] = t.type==="number" ? num(t.value) : t.value; });
+  if (t.dataset.leg) return mutate(()=>{ w.legacy[t.dataset.leg] = t.value; });
+  if (t.dataset.legcost !== undefined) return mutate(()=>{ w.legacy.costs[+t.dataset.legcost] = num(t.value); });
+  if (t.dataset.item){
+    const it = w.items.find(i=>i.id===t.dataset.item);
+    if (it) return mutate(()=>{ it[t.dataset.f] = t.dataset.f==="amount" ? num(t.value) : t.value; });
+  }
+});
+document.addEventListener("click", e => {
+  const b = e.target.closest("button[data-act]");
+  if (!b) return;
+  const [act, arg] = b.dataset.act.split(":");
+  const w = walk();
+  if (act==="new") mutate(()=>{
+    const nw = { id:uid(), name:"New cost walk", unit:w.unit, bcCost:0,
+      legacy:{name:"Legacy model", show:true, costs:[0,0,0,0]}, items:[] };
+    state.walks[nw.id]=nw; state.activeId=nw.id;
+  });
+  else if (act==="dup") mutate(()=>{
+    const c = JSON.parse(JSON.stringify(w)); c.id=uid(); c.name=w.name+" (copy)";
+    c.items = c.items.map(i=>({...i,id:uid()}));
+    state.walks[c.id]=c; state.activeId=c.id;
+  });
+  else if (act==="del"){
+    if (!confirm(`Delete "${w.name}"? This cannot be undone.`)) return;
+    mutate(()=>{
+      delete state.walks[state.activeId];
+      if (!Object.keys(state.walks).length){ const s=seedWalk(); state.walks[s.id]=s; }
+      state.activeId = Object.keys(state.walks)[0];
+    });
+  }
+  else if (act==="toggleLeg") mutate(()=>{ w.legacy.show = !w.legacy.show; });
+  else if (act==="addItem") mutate(()=>{ w.items.push({id:uid(), phase:+arg, label:"New item", category:"reduction", amount:0}); });
+  else if (act==="delItem") mutate(()=>{ w.items = w.items.filter(i=>i.id!==arg); });
+  else if (act==="export"){
+    const blob = new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "cost-walks-backup-" + new Date().toISOString().slice(0,10) + ".json";
+    a.click(); URL.revokeObjectURL(a.href);
+  }
+  else if (act==="import") document.getElementById("fileImp").click();
+});
+document.getElementById("fileImp").addEventListener("change", e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const d = JSON.parse(r.result);
+      if (!d.walks || !Object.keys(d.walks).length) throw new Error("no walks");
+      Object.values(d.walks).forEach(migrate);
+      mutate(()=>{
+        Object.values(d.walks).forEach(x=>{ state.walks[x.id]=x; });
+        state.activeId = d.activeId && state.walks[d.activeId] ? d.activeId : Object.keys(state.walks)[0];
+      });
+      alert("Imported " + Object.keys(d.walks).length + " walk(s). They've been added alongside your existing walks.");
+    } catch(err){ alert("Import failed \u2014 that file isn't a Cost Walk Studio backup."); }
+  };
+  r.readAsText(f);
+  e.target.value = "";
+});
+
+/* ---------------------- service worker ---------------------- */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", ()=> navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+}
+render();
+</script>
+</body>
+</html>
